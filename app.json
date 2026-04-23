@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "Telemedicina",
+    "slug": "app-telemedicina",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A84FF"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.ucab.teg.telemedicina",
+      "infoPlist": {
+        "NSCameraUsageDescription": "La aplicación usa la cámara durante las videollamadas con el médico.",
+        "NSMicrophoneUsageDescription": "La aplicación usa el micrófono durante las videollamadas con el médico.",
+        "NSPhotoLibraryUsageDescription": "Permite adjuntar imágenes al chat con el médico.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.ucab.teg.telemedicina",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0A84FF"
+      },
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "MODIFY_AUDIO_SETTINGS",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ]
+    },
+    "plugins": [
+      "expo-dev-client",
+      "expo-secure-store"
+    ],
+    "extra": {
+      "apiUrl": "http://localhost:3000/api",
+      "socketUrl": "http://localhost:3000"
+    }
+  }
+}

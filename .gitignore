@@ -1,0 +1,40 @@
+# Node / JS
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Expo
+.expo/
+.expo-shared/
+dist/
+web-build/
+
+# Native projects generados por `expo prebuild`
+/ios/
+/android/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# macOS
+.DS_Store
+
+# Editor / IDE
+.vscode/
+.idea/
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs
+*.log
+
+# Variables de entorno
+.env
+.env.*.local
+
+# Tests
+coverage/
