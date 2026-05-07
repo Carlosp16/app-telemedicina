@@ -12,6 +12,11 @@ import { useAuthStore } from '@/stores/auth.store';
 export const http: AxiosInstance = axios.create({
   baseURL: env.apiUrl,
   timeout: 15_000,
+  headers: {
+    // Si el backend está detrás de ngrok free, este header evita la página de
+    // warning HTML que ngrok inyecta antes de pasar al endpoint real.
+    'ngrok-skip-browser-warning': '1',
+  },
 });
 
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {

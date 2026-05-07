@@ -36,13 +36,10 @@
         "ACCESS_NETWORK_STATE"
       ]
     },
-    "plugins": [
-      "expo-dev-client",
-      "expo-secure-store"
-    ],
+    "plugins": ["expo-dev-client", "expo-secure-store"],
     "extra": {
-      "apiUrl": "http://localhost:3000/api",
-      "socketUrl": "http://localhost:3000"
+      "apiUrl": "https://506d-86-127-228-19.ngrok-free.app/api",
+      "socketUrl": "https://506d-86-127-228-19.ngrok-free.app"
     }
   }
 }

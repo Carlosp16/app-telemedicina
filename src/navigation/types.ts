@@ -9,4 +9,7 @@ export type AuthStackParamList = {
 
 export type AppStackParamList = {
   Home: undefined;
+  RequestConsultation: undefined;
+  WaitingRoom: undefined;
+  Chat: { caseId: string; doctorName?: string };
 };

@@ -42,10 +42,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         SecureStore.getItemAsync(USER_KEY),
       ]);
       if (token && userRaw) {
-        set({ token, user: JSON.parse(userRaw) });
-        // Validación asíncrona: si falla (token expirado) el interceptor 401
-        // ya dispara logout.
-        get().refreshMe().catch(() => undefined);
+        const user = JSON.parse(userRaw) as AuthUser;
+        // Defensa: si en versiones anteriores se guardó un usuario que no es
+        // paciente, lo limpiamos para evitar que entre a la UI del paciente.
+        if (user.role !== 'paciente') {
+          await Promise.all([
+            SecureStore.deleteItemAsync(TOKEN_KEY),
+            SecureStore.deleteItemAsync(USER_KEY),
+          ]);
+        } else {
+          set({ token, user });
+          // Validación asíncrona: si falla (token expirado) el interceptor 401
+          // ya dispara logout.
+          get().refreshMe().catch(() => undefined);
+        }
       }
     } finally {
       set({ hydrated: true });
@@ -62,6 +72,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   login: async (email, password) => {
     const res = await authApi.login(email, password);
+    if (res.user.role !== 'paciente') {
+      // Esta app es exclusiva para pacientes: los médicos y administradores
+      // entran por el portal web. Cerramos la sesión en el backend (best-effort)
+      // para no dejar el token huérfano y devolvemos un error claro.
+      authApi.logoutBackend().catch(() => undefined);
+      throw new Error(
+        'Esta app es solo para pacientes. Si eres médico o administrador, ' +
+          'entra por el portal web.',
+      );
+    }
     await get().setSession(res.accessToken, res.user);
   },
 
