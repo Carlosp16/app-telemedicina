@@ -38,8 +38,8 @@
     },
     "plugins": ["expo-dev-client", "expo-secure-store"],
     "extra": {
-      "apiUrl": "https://506d-86-127-228-19.ngrok-free.app/api",
-      "socketUrl": "https://506d-86-127-228-19.ngrok-free.app"
+      "apiUrl": "https://telemedicina-backend-production-120a.up.railway.app/api",
+      "socketUrl": "https://telemedicina-backend-production-120a.up.railway.app"
     }
   }
 }
