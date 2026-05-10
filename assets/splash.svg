@@ -1,0 +1,22 @@
+<svg width="1242" height="2436" viewBox="0 0 1242 2436" xmlns="http://www.w3.org/2000/svg">
+  <!-- Splash screen: el resizeMode de Expo respeta el aspect ratio.
+       Ponemos el pulso centrado y un texto chico abajo (opcional). -->
+  <rect x="0" y="0" width="1242" height="2436" fill="#0F0F0F"/>
+
+  <!-- Pulso EKG centrado vertical y horizontalmente -->
+  <g transform="translate(621 1218)">
+    <path d="M -360 0 L -200 0 L -140 -160 L -75 200 L -10 -240 L 55 200 L 105 0 L 350 0"
+          fill="none" stroke="#FFFFFF" stroke-width="32"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Texto opcional: nombre de la app -->
+  <text x="621" y="1500" text-anchor="middle"
+        fill="#FFFFFF"
+        font-family="-apple-system, system-ui, sans-serif"
+        font-size="56"
+        font-weight="500"
+        letter-spacing="2">
+    Telemedicina
+  </text>
+</svg>

@@ -1,0 +1,9 @@
+<svg width="1024" height="1024" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Adaptive icon foreground: Android le aplica una máscara, así que el contenido
+       vive solo en el centro (~66% del área). El fondo lo define app.json:
+       android.adaptiveIcon.backgroundColor. -->
+  <!-- Pulso EKG centrado y reducido para respetar la safe area de Android -->
+  <path d="M 110 200 L 150 200 L 170 150 L 195 260 L 220 110 L 245 260 L 265 200 L 290 200"
+        fill="none" stroke="#FFFFFF" stroke-width="18"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
