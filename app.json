@@ -33,13 +33,28 @@
         "RECORD_AUDIO",
         "MODIFY_AUDIO_SETTINGS",
         "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "CAMERA",
+        "RECORD_AUDIO",
+        "MODIFY_AUDIO_SETTINGS",
+        "INTERNET",
         "ACCESS_NETWORK_STATE"
       ]
     },
     "plugins": ["expo-dev-client", "expo-secure-store"],
     "extra": {
       "apiUrl": "https://telemedicina-backend-production-120a.up.railway.app/api",
-      "socketUrl": "https://telemedicina-backend-production-120a.up.railway.app"
+      "socketUrl": "https://telemedicina-backend-production-120a.up.railway.app",
+      "eas": {
+        "projectId": "52e5c1b8-575d-4885-9aab-9d4cfcad6a4c"
+      }
+    },
+    "owner": "carlosp16",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/52e5c1b8-575d-4885-9aab-9d4cfcad6a4c"
     }
   }
 }
