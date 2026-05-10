@@ -4,12 +4,19 @@
 // El token JWT se persiste en el Keychain del sistema (iOS) o en el Keystore
 // cifrado (Android). NO se guarda en AsyncStorage para evitar exponerlo si el
 // dispositivo no está cifrado.
+//
+// El store le pasa al `client` HTTP un puente (`bindAuthBridge`) con los dos
+// hooks que el cliente necesita (lectura del token + limpieza local de la
+// sesión cuando llega un 401 a una request autenticada). De esta forma el
+// cliente queda desacoplado del store y se rompe el require cycle
+// `auth.store ↔ api/auth ↔ api/client`.
 // -----------------------------------------------------------------------------
 import * as SecureStore from 'expo-secure-store';
 import { create } from 'zustand';
 
 import type { AuthUser } from '@/api/auth';
 import * as authApi from '@/api/auth';
+import { bindAuthBridge } from '@/api/client';
 
 const TOKEN_KEY = 'telemed.auth.token';
 const USER_KEY = 'telemed.auth.user';
@@ -21,6 +28,8 @@ type AuthState = {
 
   hydrate: () => Promise<void>;
   setSession: (token: string, user: AuthUser) => Promise<void>;
+  /** Limpia el estado en memoria + persistencia. NO llama al backend. */
+  clearSession: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshMe: () => Promise<void>;
@@ -46,14 +55,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         // Defensa: si en versiones anteriores se guardó un usuario que no es
         // paciente, lo limpiamos para evitar que entre a la UI del paciente.
         if (user.role !== 'paciente') {
-          await Promise.all([
-            SecureStore.deleteItemAsync(TOKEN_KEY),
-            SecureStore.deleteItemAsync(USER_KEY),
-          ]);
+          await get().clearSession();
         } else {
           set({ token, user });
           // Validación asíncrona: si falla (token expirado) el interceptor 401
-          // ya dispara logout.
+          // ya dispara la limpieza local.
           get().refreshMe().catch(() => undefined);
         }
       }
@@ -70,13 +76,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ token, user });
   },
 
+  clearSession: async () => {
+    await Promise.all([
+      SecureStore.deleteItemAsync(TOKEN_KEY),
+      SecureStore.deleteItemAsync(USER_KEY),
+    ]);
+    set({ token: null, user: null });
+  },
+
   login: async (email, password) => {
     const res = await authApi.login(email, password);
     if (res.user.role !== 'paciente') {
       // Esta app es exclusiva para pacientes: los médicos y administradores
-      // entran por el portal web. Cerramos la sesión en el backend (best-effort)
-      // para no dejar el token huérfano y devolvemos un error claro.
-      authApi.logoutBackend().catch(() => undefined);
+      // entran por el portal web. NO persistimos el token (no llamamos
+      // setSession) y NO disparamos logoutBackend porque generaría 401 en
+      // cascada — el token recién emitido nunca quedó guardado.
       throw new Error(
         'Esta app es solo para pacientes. Si eres médico o administrador, ' +
           'entra por el portal web.',
@@ -86,12 +100,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: async () => {
+    // Best-effort en el backend; si falla no bloquea el logout local.
     await authApi.logoutBackend();
-    await Promise.all([
-      SecureStore.deleteItemAsync(TOKEN_KEY),
-      SecureStore.deleteItemAsync(USER_KEY),
-    ]);
-    set({ token: null, user: null });
+    await get().clearSession();
   },
 
   refreshMe: async () => {
@@ -100,3 +111,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user });
   },
 }));
+
+// Le pasamos al cliente HTTP los dos hooks que necesita para inyectar el token
+// y limpiar la sesión cuando llega un 401, sin tener que importarse mutuamente.
+bindAuthBridge({
+  getToken: () => useAuthStore.getState().token,
+  clearSession: () => {
+    void useAuthStore.getState().clearSession();
+  },
+});
