@@ -71,7 +71,19 @@ export function useChatSocket({
 
   const sendMessage = useCallback(
     (content: string) => {
-      socketRef.current?.emit('send-message', { caseId, content });
+      // Usamos el callback de ack del servidor: si retorna `{ ok, message }`,
+      // el remitente agrega el mensaje a la UI inmediatamente, sin depender
+      // del broadcast (que puede tardar o perderse si el socket todavía no
+      // se unió al room por una race condition).
+      socketRef.current?.emit(
+        'send-message',
+        { caseId, content },
+        (ack?: { ok?: boolean; message?: ChatMessage }) => {
+          if (ack?.ok && ack.message) {
+            onMessageRef.current(ack.message);
+          }
+        },
+      );
     },
     [caseId],
   );
