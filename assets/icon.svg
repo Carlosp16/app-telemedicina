@@ -1,0 +1,13 @@
+<svg width="1024" height="1024" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fondo negro con esquinas redondeadas (paleta Facultad de Ciencias UCV) -->
+  <rect x="0" y="0" width="400" height="400" rx="80" fill="#0F0F0F"/>
+
+  <!-- Cruz médica centrada -->
+  <rect x="172" y="100" width="56" height="200" rx="8" fill="#FFFFFF"/>
+  <rect x="100" y="172" width="200" height="56" rx="8" fill="#FFFFFF"/>
+
+  <!-- Pulso EKG horizontal cruzando la cruz -->
+  <path d="M 50 200 L 130 200 L 150 160 L 178 248 L 205 130 L 228 248 L 250 200 L 350 200"
+        fill="none" stroke="#FFFFFF" stroke-width="10"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
