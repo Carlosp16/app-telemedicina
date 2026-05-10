@@ -123,7 +123,10 @@ export function ChatScreen({ route, navigation }: Props) {
 
   const renderItem = useCallback(
     ({ item }: { item: ChatMessage }) => {
-      const mine = item.sender === currentUserId;
+      // Comparación tolerante: el sender puede llegar como string raw o como
+      // objeto populated (`{ _id, ... }`). idOf normaliza ambos casos.
+      const senderId = idOf(item.sender);
+      const mine = !!currentUserId && senderId === currentUserId;
       return (
         <View
           style={[
@@ -132,6 +135,9 @@ export function ChatScreen({ route, navigation }: Props) {
           ]}
         >
           <View style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleOther]}>
+            <Text style={[styles.senderLabel, mine ? styles.senderLabelMine : styles.senderLabelOther]}>
+              {mine ? 'Tú' : doctorName ? `Dr. ${doctorName}` : 'Médico'}
+            </Text>
             {item.kind === 'file' && item.fileData ? (
               <Text style={[styles.content, mine && styles.contentMine]}>
                 📎 {item.fileData.name}
@@ -148,7 +154,7 @@ export function ChatScreen({ route, navigation }: Props) {
         </View>
       );
     },
-    [currentUserId],
+    [currentUserId, doctorName],
   );
 
   const keyExtractor = useCallback((m: ChatMessage) => m._id, []);
@@ -239,6 +245,19 @@ function formatTime(iso: string): string {
   }
 }
 
+/**
+ * Extrae el _id como string desde una referencia que puede llegar como
+ * string raw, ObjectId, u objeto populated `{ _id, ... }`. Necesario porque
+ * el backend a veces popula y a veces no.
+ */
+function idOf(ref: unknown): string {
+  if (!ref) return '';
+  if (typeof ref === 'string') return ref;
+  const maybe = ref as { _id?: unknown; toString?: () => string };
+  if (maybe._id != null) return String(maybe._id);
+  return maybe.toString ? maybe.toString() : String(ref);
+}
+
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   center: { alignItems: 'center', justifyContent: 'center' },
@@ -249,24 +268,34 @@ const styles = StyleSheet.create({
   },
   statusText: { color: '#fff', fontSize: 12, fontWeight: '600' },
   list: { padding: 12, paddingBottom: 16 },
-  bubbleRow: { marginVertical: 4, flexDirection: 'row' },
+  bubbleRow: { marginVertical: 6, flexDirection: 'row' },
   rowMine: { justifyContent: 'flex-end' },
   rowOther: { justifyContent: 'flex-start' },
   bubble: {
     maxWidth: '78%',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 14,
+    borderRadius: 16,
   },
   bubbleMine: {
     backgroundColor: colors.primary,
     borderBottomRightRadius: 4,
   },
   bubbleOther: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: '#ECEEF1',
     borderBottomLeftRadius: 4,
+  },
+  senderLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 2,
+    letterSpacing: 0.3,
+  },
+  senderLabelMine: {
+    color: 'rgba(255,255,255,0.85)',
+  },
+  senderLabelOther: {
+    color: colors.primary,
   },
   content: { color: colors.textPrimary, fontSize: 15, lineHeight: 20 },
   contentMine: { color: '#fff' },
