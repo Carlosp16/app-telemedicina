@@ -15,11 +15,18 @@ import type { Socket } from 'socket.io-client';
 import type { ChatMessage } from '@/api/chat';
 import { createSocket } from '@/realtime/socket';
 
+export interface IncomingCallPayload {
+  sessionId: string;
+  callerId: string;
+  callerName?: string;
+}
+
 export type ChatSocketOptions = {
   caseId: string;
   onMessage: (msg: ChatMessage) => void;
   onCaseClosed?: () => void;
   onRemoteTyping?: (payload: { userId: string; typing: boolean }) => void;
+  onIncomingCall?: (payload: IncomingCallPayload) => void;
 };
 
 export function useChatSocket({
@@ -27,6 +34,7 @@ export function useChatSocket({
   onMessage,
   onCaseClosed,
   onRemoteTyping,
+  onIncomingCall,
 }: ChatSocketOptions) {
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
@@ -37,9 +45,11 @@ export function useChatSocket({
   const onMessageRef = useRef(onMessage);
   const onCaseClosedRef = useRef(onCaseClosed);
   const onRemoteTypingRef = useRef(onRemoteTyping);
+  const onIncomingCallRef = useRef(onIncomingCall);
   onMessageRef.current = onMessage;
   onCaseClosedRef.current = onCaseClosed;
   onRemoteTypingRef.current = onRemoteTyping;
+  onIncomingCallRef.current = onIncomingCall;
 
   useEffect(() => {
     const socket = createSocket('/chat');
@@ -57,6 +67,9 @@ export function useChatSocket({
     socket.on('case-closed', () => onCaseClosedRef.current?.());
     socket.on('typing', (payload: { userId: string; typing: boolean }) =>
       onRemoteTypingRef.current?.(payload),
+    );
+    socket.on('incoming-call', (payload: IncomingCallPayload) =>
+      onIncomingCallRef.current?.(payload),
     );
 
     socket.connect();

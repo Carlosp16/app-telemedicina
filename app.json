@@ -41,7 +41,17 @@
         "ACCESS_NETWORK_STATE"
       ]
     },
-    "plugins": ["expo-dev-client", "expo-secure-store"],
+    "plugins": [
+      "expo-dev-client",
+      "expo-secure-store",
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "La aplicación usa la cámara durante las videollamadas con el médico.",
+          "microphonePermission": "La aplicación usa el micrófono durante las videollamadas con el médico."
+        }
+      ]
+    ],
     "extra": {
       "apiUrl": "https://telemedicina-backend-production-120a.up.railway.app/api",
       "socketUrl": "https://telemedicina-backend-production-120a.up.railway.app",

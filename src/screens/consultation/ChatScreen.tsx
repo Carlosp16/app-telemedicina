@@ -28,7 +28,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { ChatMessage } from '@/api/chat';
 import { listMessages, markAsRead } from '@/api/chat';
 import { errorMessage } from '@/api/client';
-import { useChatSocket } from '@/hooks/useChatSocket';
+import { acceptCall, rejectCall, startCallForCase } from '@/api/video';
+import { IncomingCallModal } from '@/components/IncomingCallModal';
+import { VideoCallOverlay } from '@/components/VideoCallOverlay';
+import { useChatSocket, type IncomingCallPayload } from '@/hooks/useChatSocket';
 import { useAuthStore } from '@/stores/auth.store';
 import { colors } from '@/theme/colors';
 import type { AppStackParamList } from '@/navigation/types';
@@ -48,6 +51,15 @@ export function ChatScreen({ route, navigation }: Props) {
   const [remoteTyping, setRemoteTyping] = useState(false);
   const listRef = useRef<FlatList<ChatMessage>>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ------ Videollamada ------------------------------------------------------
+  const [activeCall, setActiveCall] = useState<
+    | { sessionId: string; role: 'caller' | 'callee'; peerName?: string }
+    | null
+  >(null);
+  const [incoming, setIncoming] = useState<IncomingCallPayload | null>(null);
+  const [startingCall, setStartingCall] = useState(false);
+  const [accepting, setAccepting] = useState(false);
 
   // Handlers del socket.
   const handleIncoming = useCallback((msg: ChatMessage) => {
@@ -70,11 +82,22 @@ export function ChatScreen({ route, navigation }: Props) {
     [currentUserId],
   );
 
+  const handleIncomingCall = useCallback(
+    (payload: IncomingCallPayload) => {
+      // Si nosotros mismos somos quienes llamamos, ignoramos.
+      if (payload.callerId === currentUserId) return;
+      if (activeCall) return;
+      setIncoming(payload);
+    },
+    [activeCall, currentUserId],
+  );
+
   const { connected, sendMessage, sendTyping } = useChatSocket({
     caseId,
     onMessage: handleIncoming,
     onCaseClosed: handleCaseClosed,
     onRemoteTyping: handleRemoteTyping,
+    onIncomingCall: handleIncomingCall,
   });
 
   // Cargar histórico al montar.
@@ -93,10 +116,71 @@ export function ChatScreen({ route, navigation }: Props) {
     })();
   }, [caseId, navigation]);
 
-  // Actualizar título dinámicamente.
+  async function handleStartCall() {
+    if (startingCall || activeCall || closed) return;
+    setStartingCall(true);
+    try {
+      const { session } = await startCallForCase(caseId);
+      setActiveCall({
+        sessionId: session._id,
+        role: 'caller',
+        peerName: doctorName,
+      });
+    } catch (err) {
+      Alert.alert('Error', errorMessage(err, 'No pudimos iniciar la llamada.'));
+    } finally {
+      setStartingCall(false);
+    }
+  }
+
+  async function handleAcceptIncoming() {
+    if (!incoming) return;
+    setAccepting(true);
+    try {
+      await acceptCall(incoming.sessionId);
+      setActiveCall({
+        sessionId: incoming.sessionId,
+        role: 'callee',
+        peerName: incoming.callerName,
+      });
+      setIncoming(null);
+    } catch (err) {
+      Alert.alert('Error', errorMessage(err, 'No pudimos aceptar la llamada.'));
+    } finally {
+      setAccepting(false);
+    }
+  }
+
+  async function handleRejectIncoming() {
+    if (!incoming) return;
+    try {
+      await rejectCall(incoming.sessionId);
+    } catch {
+      /* ignore */
+    } finally {
+      setIncoming(null);
+    }
+  }
+
+  // Actualizar título dinámicamente y poner botón 📹 en el header.
   useEffect(() => {
-    if (doctorName) navigation.setOptions({ title: `Dr. ${doctorName}` });
-  }, [doctorName, navigation]);
+    navigation.setOptions({
+      title: doctorName ? `Dr. ${doctorName}` : 'Chat',
+      headerRight: () =>
+        closed || activeCall ? null : (
+          <Pressable
+            onPress={handleStartCall}
+            disabled={startingCall}
+            style={({ pressed }) => [
+              { padding: 8, opacity: pressed ? 0.5 : 1 },
+            ]}
+          >
+            <Text style={{ fontSize: 22 }}>📹</Text>
+          </Pressable>
+        ),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doctorName, navigation, closed, activeCall, startingCall]);
 
   // Auto-scroll al final cuando cambian los mensajes.
   useEffect(() => {
@@ -232,6 +316,24 @@ export function ChatScreen({ route, navigation }: Props) {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+      {activeCall && (
+        <VideoCallOverlay
+          visible
+          sessionId={activeCall.sessionId}
+          role={activeCall.role}
+          peerName={activeCall.peerName}
+          onEnded={() => setActiveCall(null)}
+        />
+      )}
+
+      <IncomingCallModal
+        visible={!!incoming}
+        callerName={incoming?.callerName ?? 'Médico'}
+        accepting={accepting}
+        onAccept={handleAcceptIncoming}
+        onReject={handleRejectIncoming}
+      />
     </SafeAreaView>
   );
 }
