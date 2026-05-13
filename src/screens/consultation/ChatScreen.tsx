@@ -28,12 +28,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { ChatMessage } from '@/api/chat';
 import { listMessages, markAsRead } from '@/api/chat';
 import { errorMessage } from '@/api/client';
+import { downloadFile, uploadFile } from '@/api/files';
 import { acceptCall, rejectCall, startCallForCase } from '@/api/video';
 import { IncomingCallModal } from '@/components/IncomingCallModal';
 import { VideoCallOverlay } from '@/components/VideoCallOverlay';
 import { useChatSocket, type IncomingCallPayload } from '@/hooks/useChatSocket';
 import { useAuthStore } from '@/stores/auth.store';
 import { colors } from '@/theme/colors';
+import { pickFileForUpload, saveAndOpenDownloadedFile } from '@/utils/file-transfer';
 import type { AppStackParamList } from '@/navigation/types';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'Chat'>;
@@ -60,6 +62,10 @@ export function ChatScreen({ route, navigation }: Props) {
   const [incoming, setIncoming] = useState<IncomingCallPayload | null>(null);
   const [startingCall, setStartingCall] = useState(false);
   const [accepting, setAccepting] = useState(false);
+
+  // ------ Archivos ----------------------------------------------------------
+  const [uploading, setUploading] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   // Handlers del socket.
   const handleIncoming = useCallback((msg: ChatMessage) => {
@@ -125,6 +131,34 @@ export function ChatScreen({ route, navigation }: Props) {
       }
     })();
   }, [caseId, navigation]);
+
+  async function handlePickAndUpload() {
+    if (uploading || closed) return;
+    setUploading(true);
+    try {
+      const picked = await pickFileForUpload();
+      if (!picked) return; // canceló el picker
+      const msg = await uploadFile(caseId, picked);
+      setMessages((prev) => (prev.some((m) => m._id === msg._id) ? prev : [...prev, msg]));
+    } catch (err) {
+      Alert.alert('Archivo', errorMessage(err, 'No pudimos enviar el archivo.'));
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleDownloadFile(msg: ChatMessage) {
+    if (downloadingId) return;
+    setDownloadingId(msg._id);
+    try {
+      const file = await downloadFile(msg._id);
+      await saveAndOpenDownloadedFile(file);
+    } catch (err) {
+      Alert.alert('Descarga', errorMessage(err, 'No pudimos descargar el archivo.'));
+    } finally {
+      setDownloadingId(null);
+    }
+  }
 
   async function handleStartCall() {
     if (startingCall || activeCall || closed) return;
@@ -237,9 +271,21 @@ export function ChatScreen({ route, navigation }: Props) {
               {mine ? 'Tú' : doctorName ? `Dr. ${doctorName}` : 'Médico'}
             </Text>
             {item.kind === 'file' && item.fileData ? (
-              <Text style={[styles.content, mine && styles.contentMine]}>
-                📎 {item.fileData.name}
-              </Text>
+              <Pressable
+                onPress={() => handleDownloadFile(item)}
+                disabled={downloadingId === item._id}
+              >
+                <Text style={[styles.fileLink, mine && styles.fileLinkMine]}>
+                  📎 {item.fileData.name}
+                </Text>
+                {downloadingId === item._id && (
+                  <ActivityIndicator
+                    size="small"
+                    color={mine ? '#fff' : colors.primary}
+                    style={{ marginTop: 4 }}
+                  />
+                )}
+              </Pressable>
             ) : (
               <Text style={[styles.content, mine && styles.contentMine]}>
                 {item.content}
@@ -308,6 +354,21 @@ export function ChatScreen({ route, navigation }: Props) {
         />
 
         <View style={styles.composer}>
+          <Pressable
+            onPress={handlePickAndUpload}
+            disabled={uploading || closed}
+            style={({ pressed }) => [
+              styles.attachBtn,
+              (uploading || closed) && styles.sendDisabled,
+              pressed && styles.sendPressed,
+            ]}
+          >
+            {uploading ? (
+              <ActivityIndicator size="small" color={colors.textSecondary} />
+            ) : (
+              <Text style={styles.attachIcon}>📎</Text>
+            )}
+          </Pressable>
           <TextInput
             style={styles.input}
             value={draft}
@@ -464,4 +525,21 @@ const styles = StyleSheet.create({
   sendDisabled: { opacity: 0.4 },
   sendPressed: { opacity: 0.8 },
   sendText: { color: '#fff', fontWeight: '600' },
+  attachBtn: {
+    width: 42,
+    height: 42,
+    marginRight: 6,
+    borderRadius: 21,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attachIcon: { fontSize: 20 },
+  fileLink: {
+    color: colors.primary,
+    fontSize: 15,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+  fileLinkMine: { color: '#fff' },
 });
