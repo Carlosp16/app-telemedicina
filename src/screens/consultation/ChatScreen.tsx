@@ -84,8 +84,18 @@ export function ChatScreen({ route, navigation }: Props) {
 
   const handleIncomingCall = useCallback(
     (payload: IncomingCallPayload) => {
-      // Si nosotros mismos somos quienes llamamos, ignoramos.
-      if (payload.callerId === currentUserId) return;
+      // Defensa 1 — Si el caller somos nosotros mismos, ignorar.
+      // Convertimos a String por las dudas: el backend emite el JWT.sub y el
+      // store guarda user._id; ambos deberían coincidir pero a veces uno
+      // viene como ObjectId crudo y el === directo falla.
+      if (
+        currentUserId &&
+        String(payload.callerId) === String(currentUserId)
+      ) {
+        return;
+      }
+      // Defensa 2 — Si ya tenemos una llamada activa (estamos en el caller
+      // que recién recibió respuesta del backend), tampoco mostramos modal.
       if (activeCall) return;
       setIncoming(payload);
     },
@@ -126,6 +136,10 @@ export function ChatScreen({ route, navigation }: Props) {
         role: 'caller',
         peerName: doctorName,
       });
+      // Si entre el click y la respuesta del backend nuestra propia app
+      // recibió el broadcast 'incoming-call' (y el filtro no lo cazó),
+      // limpiamos el modal acá.
+      setIncoming(null);
     } catch (err) {
       Alert.alert('Error', errorMessage(err, 'No pudimos iniciar la llamada.'));
     } finally {
