@@ -24,6 +24,7 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
 import type { ChatMessage } from '@/api/chat';
 import { listMessages, markAsRead } from '@/api/chat';
@@ -223,7 +224,7 @@ export function ChatScreen({ route, navigation }: Props) {
               { padding: 8, opacity: pressed ? 0.5 : 1 },
             ]}
           >
-            <Text style={{ fontSize: 22 }}>📹</Text>
+            <Ionicons name="videocam" size={24} color={colors.primary} />
           </Pressable>
         ),
     });
@@ -274,15 +275,20 @@ export function ChatScreen({ route, navigation }: Props) {
               <Pressable
                 onPress={() => handleDownloadFile(item)}
                 disabled={downloadingId === item._id}
+                style={styles.fileRow}
               >
+                <Ionicons
+                  name="document-attach"
+                  size={16}
+                  color={mine ? '#fff' : colors.primary}
+                />
                 <Text style={[styles.fileLink, mine && styles.fileLinkMine]}>
-                  📎 {item.fileData.name}
+                  {item.fileData.name}
                 </Text>
                 {downloadingId === item._id && (
                   <ActivityIndicator
                     size="small"
                     color={mine ? '#fff' : colors.primary}
-                    style={{ marginTop: 4 }}
                   />
                 )}
               </Pressable>
@@ -366,7 +372,7 @@ export function ChatScreen({ route, navigation }: Props) {
             {uploading ? (
               <ActivityIndicator size="small" color={colors.textSecondary} />
             ) : (
-              <Text style={styles.attachIcon}>📎</Text>
+              <Ionicons name="attach" size={22} color={colors.textSecondary} />
             )}
           </Pressable>
           <TextInput
@@ -535,11 +541,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   attachIcon: { fontSize: 20 },
+  fileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   fileLink: {
     color: colors.primary,
     fontSize: 15,
     fontWeight: '600',
     textDecorationLine: 'underline',
+    flexShrink: 1,
   },
   fileLinkMine: { color: '#fff' },
 });

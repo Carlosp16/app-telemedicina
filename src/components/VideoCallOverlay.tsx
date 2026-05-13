@@ -12,6 +12,7 @@
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { RTCView } from 'react-native-webrtc';
+import { Ionicons } from '@expo/vector-icons';
 
 import { useVideoCall, type CallControls } from '@/hooks/useVideoCall';
 import { colors } from '@/theme/colors';
@@ -111,15 +112,24 @@ function Controls({
 }) {
   return (
     <View style={[styles.controlsBar, compact ? styles.controlsBarCompact : null]}>
-      <CtlBtn label={call.micOn ? '🎤' : '🔇'} active={call.micOn} onPress={call.toggleMic} />
       <CtlBtn
-        label={call.cameraOn ? '📷' : '🚫'}
+        icon={call.micOn ? 'mic' : 'mic-off'}
+        active={call.micOn}
+        onPress={call.toggleMic}
+      />
+      <CtlBtn
+        icon={call.cameraOn ? 'videocam' : 'videocam-off'}
         active={call.cameraOn}
         onPress={call.toggleCamera}
       />
-      <CtlBtn label="🔄" active onPress={call.switchCamera} />
-      <CtlBtn label={mode === 'video' ? '💬' : '📹'} active onPress={onToggleMode} />
+      <CtlBtn icon="camera-reverse" active onPress={call.switchCamera} />
+      <CtlBtn
+        icon={mode === 'video' ? 'chatbubble-ellipses' : 'videocam'}
+        active
+        onPress={onToggleMode}
+      />
       <Pressable onPress={call.hangup} style={styles.hangupBtn}>
+        <Ionicons name="call" size={18} color="#fff" style={{ transform: [{ rotate: '135deg' }] }} />
         <Text style={styles.hangupText}>Colgar</Text>
       </Pressable>
     </View>
@@ -127,11 +137,11 @@ function Controls({
 }
 
 function CtlBtn({
-  label,
+  icon,
   active,
   onPress,
 }: {
-  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
   active: boolean;
   onPress: () => void;
 }) {
@@ -140,7 +150,7 @@ function CtlBtn({
       onPress={onPress}
       style={[styles.ctlBtn, !active && styles.ctlBtnOff]}
     >
-      <Text style={styles.ctlBtnText}>{label}</Text>
+      <Ionicons name={icon} size={22} color="#fff" />
     </Pressable>
   );
 }
@@ -218,12 +228,14 @@ const styles = StyleSheet.create({
   ctlBtnOff: { backgroundColor: 'rgba(220,38,38,0.85)' },
   ctlBtnText: { fontSize: 22, color: '#fff' },
   hangupBtn: {
+    flexDirection: 'row',
     paddingHorizontal: 16,
     height: 48,
     borderRadius: 24,
     backgroundColor: '#DC2626',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
   },
   hangupText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   chatModeContainer: {
