@@ -106,9 +106,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   refreshMe: async () => {
-    const user = await authApi.me();
-    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
-    set({ user });
+    const fresh = await authApi.me();
+    // Defensa: si /auth/me no trae _id (caso de respuestas viejas), nos
+    // quedamos con el _id del login original para no romper la
+    // identificación de mensajes en el chat.
+    const current = get().user;
+    const merged: AuthUser = {
+      ...fresh,
+      _id: fresh._id || current?._id || '',
+    };
+    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(merged));
+    set({ user: merged });
   },
 }));
 

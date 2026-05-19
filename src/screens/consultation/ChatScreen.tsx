@@ -256,10 +256,12 @@ export function ChatScreen({ route, navigation }: Props) {
 
   const renderItem = useCallback(
     ({ item }: { item: ChatMessage }) => {
-      // Comparación tolerante: el sender puede llegar como string raw o como
-      // objeto populated (`{ _id, ... }`). idOf normaliza ambos casos.
+      // Comparación ultra defensiva: aplicamos idOf en AMBAS puntas para
+      // tolerar que sender o currentUserId vengan como string, ObjectId
+      // serializado u objeto populado.
       const senderId = idOf(item.sender);
-      const mine = !!currentUserId && senderId === currentUserId;
+      const meId = idOf(currentUserId);
+      const mine = !!senderId && !!meId && senderId === meId;
       return (
         <View
           style={[
