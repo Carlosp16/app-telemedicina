@@ -75,8 +75,8 @@ export function VideoCallOverlay({ visible, sessionId, role, peerName, onEnded }
           </View>
         )}
 
-        {call.localStream && (
-          <View style={styles.pip}>
+        <View style={styles.pip}>
+          {call.localStream ? (
             <RTCView
               streamURL={call.localStream.toURL()}
               style={styles.pipVideo}
@@ -84,11 +84,20 @@ export function VideoCallOverlay({ visible, sessionId, role, peerName, onEnded }
               mirror
               zOrder={1}
             />
-          </View>
-        )}
+          ) : (
+            <View style={[styles.pipVideo, styles.pipEmpty]}>
+              <Text style={styles.pipEmptyText}>Sin cámara</Text>
+            </View>
+          )}
+        </View>
 
         <View style={styles.peerLabel}>
           <Text style={styles.peerLabelText}>{peerName ?? 'En llamada'}</Text>
+        </View>
+
+        {/* Marcador temporal para confirmar que corre el JS nuevo (build B3). */}
+        <View style={styles.buildTag}>
+          <Text style={styles.buildTagText}>B3</Text>
         </View>
 
         <Controls
@@ -191,6 +200,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
   pipVideo: { flex: 1 },
+  pipEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#222' },
+  pipEmptyText: { color: '#fff', fontSize: 11 },
+  buildTag: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  buildTagText: { color: '#0f0', fontSize: 10, fontWeight: '700' },
   peerLabel: {
     position: 'absolute',
     top: 50,
