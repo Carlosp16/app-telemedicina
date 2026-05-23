@@ -67,6 +67,7 @@ export function VideoCallOverlay({ visible, sessionId, role, peerName, onEnded }
             streamURL={call.remoteStream.toURL()}
             style={StyleSheet.absoluteFill}
             objectFit="cover"
+            zOrder={0}
           />
         ) : (
           <View style={[StyleSheet.absoluteFill, styles.placeholder]}>
@@ -81,6 +82,7 @@ export function VideoCallOverlay({ visible, sessionId, role, peerName, onEnded }
               style={styles.pipVideo}
               objectFit="cover"
               mirror
+              zOrder={1}
             />
           </View>
         )}
