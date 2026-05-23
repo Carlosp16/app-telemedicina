@@ -8,7 +8,11 @@
 //     para que el usuario lo guarde donde quiera (Drive, Galería, etc.).
 // -----------------------------------------------------------------------------
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
+// expo-file-system v19 (SDK 54) movió la API clásica (cacheDirectory,
+// read/writeAsStringAsync, EncodingType) al subpath `/legacy`. El import
+// principal solo trae la API nueva (File/Directory/Paths), donde esos
+// símbolos son `undefined` y la escritura del archivo falla.
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 
 import {
@@ -53,22 +57,60 @@ export async function pickFileForUpload(): Promise<UploadInput | null> {
   };
 }
 
+const EXT_BY_MIME: Record<string, string> = {
+  'application/pdf': 'pdf',
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+};
+
+/**
+ * Convierte el nombre original en un basename seguro para una ruta file://:
+ * sin espacios ni caracteres especiales, y garantizando la extensión según
+ * el mime. Android falla al escribir si la ruta tiene espacios o símbolos.
+ */
+function safeFileName(fileName: string, mimeType: string): string {
+  const ext = EXT_BY_MIME[mimeType] ?? 'bin';
+  const base = (fileName || 'archivo')
+    .replace(/\.[^.]+$/, '') // quitamos la extensión original
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // acentos
+    .replace(/[^a-zA-Z0-9_-]+/g, '_') // todo lo demás se vuelve _
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 40) || 'archivo';
+  return `${base}.${ext}`;
+}
+
 /**
  * Escribe el contenido del archivo descargado en el cache de la app y
  * dispara el sheet "Compartir" nativo. El usuario lo guarda donde quiera.
  */
 export async function saveAndOpenDownloadedFile(file: DownloadedFile): Promise<void> {
-  const uri = `${FileSystem.cacheDirectory}${Date.now()}-${file.fileName}`;
-  await FileSystem.writeAsStringAsync(uri, file.data, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
-  const canShare = await Sharing.isAvailableAsync();
-  if (canShare) {
-    await Sharing.shareAsync(uri, {
-      mimeType: file.mimeType,
-      dialogTitle: file.fileName,
-    });
-  } else {
-    throw new Error('Tu dispositivo no soporta abrir/compartir archivos.');
+  if (!file?.data) {
+    throw new Error('El archivo llegó vacío del servidor.');
   }
+  if (!FileSystem.cacheDirectory || !FileSystem.writeAsStringAsync) {
+    // Diagnóstico explícito si la API de archivos no está disponible
+    // (p. ej. import incorrecto o módulo nativo ausente en el build).
+    throw new Error('La librería de archivos no está disponible en este build.');
+  }
+
+  const uri = `${FileSystem.cacheDirectory}${Date.now()}-${safeFileName(file.fileName, file.mimeType)}`;
+
+  try {
+    await FileSystem.writeAsStringAsync(uri, file.data, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new Error(`No se pudo guardar el archivo: ${detail}`);
+  }
+
+  const canShare = await Sharing.isAvailableAsync().catch(() => false);
+  if (!canShare) {
+    throw new Error('Tu dispositivo no permite abrir/compartir archivos (módulo no disponible).');
+  }
+  await Sharing.shareAsync(uri, {
+    mimeType: file.mimeType,
+    dialogTitle: file.fileName,
+  });
 }
