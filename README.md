@@ -1,6 +1,5 @@
 # App Telemedicina (React Native + Expo)
 
-Aplicativo móvil para pacientes del TEG de Telemedicina (UCAB).
 Se conecta al backend NestJS del directorio hermano `../backend/`.
 
 ## Stack
