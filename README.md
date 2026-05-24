@@ -8,7 +8,7 @@ Se conecta al backend NestJS del directorio hermano `../backend/`.
 - **TypeScript**.
 - **React Navigation 6** (native-stack).
 - **Zustand** para estado global, **Axios** para HTTP, **expo-secure-store** para el token.
-- **socket.io-client** (preinstalado, se usará en iteraciones siguientes para chat y video).
+- **socket.io-client**
 
 ## Estructura
 
