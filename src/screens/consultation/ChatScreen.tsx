@@ -28,6 +28,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import type { ChatMessage } from '@/api/chat';
 import { listMessages, markAsRead } from '@/api/chat';
+import { closeCase } from '@/api/cases';
 import { errorMessage } from '@/api/client';
 import { downloadFile, uploadFile } from '@/api/files';
 import { acceptCall, rejectCall, startCallForCase } from '@/api/video';
@@ -211,25 +212,63 @@ export function ChatScreen({ route, navigation }: Props) {
     }
   }
 
-  // Actualizar título dinámicamente y poner botón 📹 en el header.
+  // Cierre voluntario de la consulta por parte del paciente.
+  function handleLeaveCase() {
+    if (closed) {
+      navigation.goBack();
+      return;
+    }
+    Alert.alert(
+      'Salir de la consulta',
+      '¿Seguro que quieres cerrar esta consulta? El médico no podrá retomarla.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Salir',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await closeCase(caseId);
+              navigation.goBack();
+            } catch (err) {
+              Alert.alert('Error', errorMessage(err, 'No pudimos cerrar la consulta.'));
+            }
+          },
+        },
+      ],
+    );
+  }
+
+  // Actualizar título dinámicamente y poner botones en el header.
   useEffect(() => {
     navigation.setOptions({
       title: doctorName ? `Dr. ${doctorName}` : 'Chat',
-      headerRight: () =>
-        closed || activeCall ? null : (
+      headerRight: () => (
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {!closed && !activeCall && (
+            <Pressable
+              onPress={handleStartCall}
+              disabled={startingCall}
+              style={({ pressed }) => [
+                { padding: 8, opacity: pressed ? 0.5 : 1 },
+              ]}
+            >
+              <Ionicons name="videocam" size={24} color={colors.primary} />
+            </Pressable>
+          )}
           <Pressable
-            onPress={handleStartCall}
-            disabled={startingCall}
+            onPress={handleLeaveCase}
             style={({ pressed }) => [
               { padding: 8, opacity: pressed ? 0.5 : 1 },
             ]}
           >
-            <Ionicons name="videocam" size={24} color={colors.primary} />
+            <Ionicons name="exit-outline" size={24} color="#DC2626" />
           </Pressable>
-        ),
+        </View>
+      ),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [doctorName, navigation, closed, activeCall, startingCall]);
+  }, [doctorName, navigation, closed, activeCall, startingCall, caseId]);
 
   // Auto-scroll al final cuando cambian los mensajes.
   useEffect(() => {

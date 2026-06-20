@@ -34,3 +34,15 @@ export async function getCase(id: string): Promise<CaseSummary> {
   const { data } = await http.get<CaseSummary>(`/cases/${id}`);
   return data;
 }
+
+/**
+ * Cierra el caso desde el lado del paciente (o médico). `diagnosis` queda
+ * opcional; si no se manda y lo cierra el paciente, el backend lo pone
+ * como "Cerrado por el paciente".
+ */
+export async function closeCase(id: string, diagnosis?: string): Promise<CaseSummary> {
+  const { data } = await http.patch<CaseSummary>(`/cases/${id}/close`, {
+    diagnosis,
+  });
+  return data;
+}
